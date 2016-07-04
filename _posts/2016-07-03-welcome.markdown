@@ -1,0 +1,11 @@
+---
+layout:     post
+title:      "Welcome to Super Zilong's Blog "
+subtitle:   ""
+date:       2016-07-03 12:00:00
+author:     "Super Zilong"
+header-img: "img/post-bg-01.jpg"
+---
+
+<p>欢迎来到Super Zilong的软件开发技术博客，我会在这里跟大家分享一些软件开发的经验，尽量会挑选一些有用或者有趣的内容，希望大家能够喜欢。</p>
+
