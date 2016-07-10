@@ -17,6 +17,8 @@ email_username:  your-email@yourdomain.com
 
 # Build settings
 markdown: kramdown
+kramdown:
+  input: GFM
 highlighter: rouge
 permalink: pretty
 paginate: 5
