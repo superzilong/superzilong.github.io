@@ -17,12 +17,31 @@ header-img: "img/post-bg-01.jpg"
 * 网页的信息来源于`<head>`元素。
 * 写进`<body>`元素的内容就是在浏览器中所能看见的东西。
 * 在 `<html>`通常包括一个`<!DOCTYPE>`声明来显示文档的类型。以下为常用的声明：
-  * HTML5<br/>
-  ```<!DOCTYPE html>```
-  * HTML 4.01<br/>
-  ```<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"  "http://www.w3.org/TR/html4/loose.dtd">```
-  * XHTML 1.0<br/>
-  ```<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">```
+  * HTML5
+  ```html
+    <!DOCTYPE html>
+  ```
+  * HTML 4.01
+  ```html
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"  "http://www.w3.org/TR/html4/loose.dtd">
+  ```
+  * XHTML 1.0
+  ```html
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  ```
+* 下面是一个例子展示一个简单的HTML网页:
+```html
+  <!DOCTYPE html>
+  <html>
+  <head>
+	  <title>Title of the document</title>
+  </head>
+
+  <body>
+  	The content of the document......
+  </body>
+  </html>
+```
 
 # 构建模块
 * 在输入内容之前先计划好网页的结构。先画草图，再绘制略图，最后再写HTML。
