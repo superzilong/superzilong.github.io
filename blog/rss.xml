@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Super Zilong Blog</title>
+        <link>https://superzilong.github.io/blog</link>
+        <description>Super Zilong Blog</description>
+        <lastBuildDate>Tue, 19 Oct 2021 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <item>
+            <title><![CDATA[Javascript中的异步调用]]></title>
+            <link>https://superzilong.github.io/blog/2021/10/19/javacript异步调用</link>
+            <guid>Javascript中的异步调用</guid>
+            <pubDate>Tue, 19 Oct 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[This is description.]]></description>
+            <content:encoded><![CDATA[<p>一文搞懂JS中的异步调用💪</p><h2>一. 异步与同步</h2><p>Javascript只有一根线程, 所以异步调用很重要.</p><p>在javascript中调用接口时, 需要等一段时间, 这个接口才能返回, 如果在等待的时候, 去执行其它的任务, 等接口返回时再继续执行, 这就是异步调用. </p><p>如果一直等待接口执行完毕, 不进行切换, 那就是同步执行.</p><p>异步调用的有点就是是的cpu的性能得到更充分的利用, 但是难点在于让多个异步调用按照我们指定的顺序执行.</p><h2>二.  传统的异步调用</h2><p>以异步版本的readfile接口为例, 在调用这个接口的时候需要写一个回调函数:</p><pre><code class="language-js">const fs = require(&quot;fs&quot;);
+
+fs.readFile(&quot;./test1.html&quot;, function(error, data){
+    if (error) throw error;
+    console.log(data);
+    // read the second file
+    fs.readFile(&quot;./test2.html&quot;, function(error, data){
+        if (error) throw error;
+         console.log(data);
+        // if there is a third file, need use another callback function.
+    })
+})
+</code></pre><p>但是如果要<strong>按顺序</strong>读取两个文件, 就需要在回调中嵌套另外一个回调, 这种写法非常不优雅, 被称为<a href="http://callbackhell.com/">&quot;回调函数噩梦&quot;</a>(callback hell). </p><p>下面都以按顺序读取两个文件为例来讲解异步调用的进化.</p><h2>三. 使用Promise进行改进</h2><p>同样以readFile接口为例, 用Promise改进后的样子如下, 使用Promise的方法可以不用嵌套多层异步调用, 但是仍然用到很多then调用, 有许多的回调函数, 而<strong>我们的目标是让异步调用跟同步调用一般简洁.</strong></p><pre><code class="language-js">// 将readFile转换成返回Promise的版本
+function proReadFile(path) {
+    return new Promise((resolve, reject)=&gt;{
+        fs.readFile(path, function(error, data) {
+                if (error) reject(error);
+                resolve(data);
+            }
+        );
+    });
+}
+
+proReadFile(&quot;./test1.html&quot;)
+.then(function(data) {
+    console.log(data.toString());
+    return proReadFile(&quot;./test2.html&quot;);
+})
+.then(function(data) {
+    console.log(data.toString());
+})
+.catch(function(err) {
+    console.log(err)
+})
+</code></pre><p>补充一点, 可以使用promisify来改造readFile函数</p><pre><code class="language-js">const promisify = require(&quot;util&quot;).promisify
+const proReadFile = promisify(fs.readFile) 
+</code></pre><h2>四. 使用生成器函数(generator function)配合自动执行器</h2><p>关于生成器函数的详细说明, 请参看MDN的<a href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/function*">这篇说明</a>. 这里引用一段其中的描述:</p><blockquote><p><strong>生成器函数</strong>在执行时能暂停，后面又能从暂停处继续执行。</p><p>调用一个<strong>生成器函数</strong>并不会马上执行它里面的语句，而是返回一个这个生成器的 <strong>迭代器对象</strong>。当这个迭代器的 <code>next() </code>方法被首次（后续）调用时，其内的语句会执行到第一个（后续）出现<a href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/yield"><code>yield</code></a>的位置为止，<a href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/yield"><code>yield</code></a> 后紧跟迭代器要返回的值。</p><p><code>next()</code>方法返回一个对象，这个对象包含两个属性：value 和 done，value 属性表示本次 <code>yield </code>表达式的返回值，done 属性为布尔类型，表示生成器后续是否还有<code>yield</code>语句，即生成器函数是否已经执行完毕并返回。</p><p>调用 <code>next()</code>方法时，如果传入了参数，那么这个参数会传给<strong>上一条执行的 yield语句左边的变量</strong>，例如下面例子中的<code>x</code>：</p><p>当在生成器函数中显式 <code>return </code>时，会导致生成器立即变为完成状态，即调用 <code>next()</code> 方法返回的对象的 <code>done </code>为 <code>true</code>。如果 <code>return </code>后面跟了一个值，那么这个值会作为<strong>当前</strong>调用 <code>next()</code> 方法返回的 value 值。</p></blockquote><p>假设有这样一个生成器函数:</p><pre><code class="language-js">const fs = require(&quot;fs&quot;);
+const promisify = require(&quot;util&quot;).promisify
+const proReadFile = promisify(fs.readFile)
+
+function* gen(file1, file2) {
+    var res1 = yield proReadFile(file1)
+    console.log(res1.toString())
+    var res2 = yield proReadFile(file2)
+    console.log(res2.toString())
+}
+
+</code></pre><p>下面这个例子中演示如何使用生成器函数来调用异步函数, <strong>注意yield关键字的后面的表达式要返回一个Promise对象</strong>, 但是yield关键字返回的是异步调用的返回值, 例如调用readFile, yield返回就是文件内容:</p><pre><code class="language-js">// 手动执行生成器函数
+var g = gen(&quot;./test1.html&quot;, &quot;./test2.html&quot;)
+g.next().value.then(
+    function(data) {
+        g.next(data.toString()).value.then(
+            function(data) {
+                g.next(data);
+            }
+        )
+    }
+)
+
+</code></pre><p>这样使用生成器函数是很麻烦的, 但是可以使用递归来封装一个自动执行器, 这里只用一个简单的例子展示, 标准实现可以看<a href="https://github.com/tj/co">co 函数库</a>:</p><pre><code class="language-js">var g = gen(&quot;./test1.html&quot;, &quot;./test2.html&quot;)
+
+// 递归封装的自动执行器
+function autoRun(g) {
+    var res = g.next();
+    function next(res) {
+        if(res.done) {
+            return;
+        };
+        res.value.then(function(data) {
+            next(g.next(data))
+        });
+    }
+    next(res);
+}
+
+// 使用自动执行器来调用生成器函数
+autoRun(g)
+</code></pre><h2>五. 使用async和await</h2><p>async标记的函数, 会自动用async函数内置的自动执行器来执行生成器函数, 所以async函数是generate函数的<strong>语法糖</strong>.</p><p>在async函数中使用await就相当于在generate函数中使用yield关键字, 同理await后面的表达式要返回一个promise对象, 但是await返回的是异步调用的返回值.</p><p>async函数的返回值是一个promise对象.</p><p>下面的伪代码简单描述下async的原理:</p><pre><code class="language-js">async function fn(args) {
+    await expression1;
+    await expression2;
+    ...
+}
+
+// 等同于
+
+function fn(args) {
+    // 生成器函数
+    function* gen(params) {
+        yield expression1;
+        yield expresson2;
+    }
+    // 自动执行器, spawn是产卵的意思...
+    function spawn(gf) {
+        var g = gf(args);
+        // 递归调用g.next()
+    }
+    return spawn(gen)
+}
+</code></pre><p>下面一个例子展示了async和await的用法, 我们可以看到<strong>使用async和await使得异步调用非常接近同步调用的形式</strong>, 只是多了async和await关键字:</p><pre><code class="language-js">const fs = require(&quot;fs&quot;);
+const promisify = require(&quot;util&quot;).promisify
+const proReadFile = promisify(fs.readFile)
+
+async function read2Files(file1, file2) {
+    var f1 = await proReadFile(file1)
+    console.log(f1.toString())
+
+    var f2 = await proReadFile(file2)
+    console.log(f2.toString())
+}
+
+read2Files(&quot;./test1.html&quot;, &quot;./test2.html&quot;)
+</code></pre><h2>六. 参考链接</h2><p><a href="http://www.ruanyifeng.com/blog/2015/04/generator.html">阮一峰博客</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Welcome]]></title>
+            <link>https://superzilong.github.io/blog/welcome</link>
+            <guid>welcome</guid>
+            <pubDate>Thu, 26 Aug 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[Docusaurus blogging features are powered by the blog plugin.]]></description>
+            <content:encoded><![CDATA[<p><a href="https://docusaurus.io/docs/blog">Docusaurus blogging features</a> are powered by the <a href="https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-blog">blog plugin</a>.</p><p>Simply add Markdown files (or folders) to the <code>blog</code> directory.</p><p>Regular blog authors can be added to <code>authors.yml</code>.</p><p>The blog post date can be extracted from filenames, such as:</p><ul><li><code>2019-05-30-welcome.md</code></li><li><code>2019-05-30-welcome/index.md</code></li></ul><p>A blog post folder can be convenient to co-locate blog post images:</p><p><img src="./docusaurus-plushie-banner.jpeg" alt="Docusaurus Plushie"/></p><p>The blog supports tags as well!</p><p><strong>And if you don&#x27;t want a blog</strong>: just delete this directory, and use <code>blog: false</code> in your Docusaurus config.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[MDX Blog Post]]></title>
+            <link>https://superzilong.github.io/blog/mdx-blog-post</link>
+            <guid>mdx-blog-post</guid>
+            <pubDate>Sun, 01 Aug 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[Blog posts support Docusaurus Markdown features, such as MDX.]]></description>
+            <content:encoded><![CDATA[<p>Blog posts support <a href="https://docusaurus.io/docs/markdown-features">Docusaurus Markdown features</a>, such as <a href="https://mdxjs.com/">MDX</a>.</p><p>:::tip</p><p>Use the power of React to create interactive blog posts.</p><pre><code class="language-js">&lt;button onClick={() =&gt; alert(&#x27;button clicked!&#x27;)}&gt;Click me!&lt;/button&gt;
+</code></pre><button>Click me!</button><p>:::</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Long Blog Post]]></title>
+            <link>https://superzilong.github.io/blog/long-blog-post</link>
+            <guid>long-blog-post</guid>
+            <pubDate>Wed, 29 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[This is the summary of a very long blog post,]]></description>
+            <content:encoded><![CDATA[<p>This is the summary of a very long blog post,</p><p>Use a <code>&lt;!--</code> <code>truncate</code> <code>--&gt;</code> comment to limit blog post size in the list view.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[First Blog Post]]></title>
+            <link>https://superzilong.github.io/blog/first-blog-post</link>
+            <guid>first-blog-post</guid>
+            <pubDate>Tue, 28 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet]]></description>
+            <content:encoded><![CDATA[<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>]]></content:encoded>
+        </item>
+    </channel>
+</rss>
