@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://superzilong.github.io/blog</id>
-    <title>Hi, I'm Super Zilong Blog</title>
+    <title>Hello, I'm Zilong Blog</title>
     <updated>2021-08-26T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://superzilong.github.io/blog"/>
-    <subtitle>Hi, I'm Super Zilong Blog</subtitle>
+    <subtitle>Hello, I'm Zilong Blog</subtitle>
     <icon>https://superzilong.github.io/img/favicon.ico</icon>
     <entry>
         <title type="html"><![CDATA[Welcome]]></title>
